@@ -1,21 +1,23 @@
-# Step 1: Use the official Python 3.10+ image
-FROM python:3.10-slim
+FROM python:3.12-slim-bookworm
 
-# Step 2: Set the working directory in the container
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+
+# Download and install uv
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+
+# Install FastAPI and Uvicorn
+RUN pip install fastapi uvicorn
+
+# Ensure the installed binary is on the `PATH`
+ENV PATH="/root/.local/bin:$PATH"
+
+# Set up the application directory
 WORKDIR /app
 
-# Step 3: Copy requirements.txt and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Step 4: Copy the application code into the container
+# Copy application files
 COPY . .
 
-# Step 5: Expose the port FastAPI will run on
-EXPOSE 8000
-
-# Step 6: Set environment variables (ensure AIPROXY_TOKEN is passed securely)
-ENV AIPROXY_TOKEN=""
-
-# Step 7: Run the FastAPI server
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Explicitly set the correct binary path and use `sh -c`
+CMD ["/root/.local/bin/uv", "run", "app.py"]
